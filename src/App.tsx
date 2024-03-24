@@ -1,45 +1,46 @@
 import {
-    Admin,
-    Resource,
-    ListGuesser,
-    EditGuesser,
-    ShowGuesser,
     defaultLightTheme,
     defaultDarkTheme,
+    AdminUI,
+    AdminContext,
+    Loading,
+    localStorageStore,
+    defaultI18nProvider,
+    ResourceProps,
+    Resource,
 } from 'react-admin';
-import BookIcon from '@mui/icons-material/Book';
-import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
+import { useEffect, useState } from 'react';
 
-import dataProvider from './dataProvider';
-import PostList from './posts/PostList';
-import PostEdit from './posts/PostEdit';
-import PostCreate from './posts/PostCreate';
+const store = localStorageStore();
 
 function App() {
+    const [resources, setResources] = useState<ResourceProps[]>([]);
+    const [dataProvider, setDataProvider] =
+        useState<typeof import('./dataProvider').default>();
+
+    useEffect(() => {
+        Promise.all([import('./Resources'), import('./dataProvider')]).then(
+            ([_resources, _dataProvider]) => {
+                setResources(_resources.default);
+                setDataProvider(_dataProvider.default);
+            }
+        );
+    }, []);
+
     return (
-        <Admin
+        <AdminContext
             dataProvider={dataProvider}
             lightTheme={defaultLightTheme}
+            i18nProvider={defaultI18nProvider}
             darkTheme={defaultDarkTheme}
+            store={store}
         >
-            <Resource
-                name="posts"
-                list={PostList}
-                edit={PostEdit}
-                create={PostCreate}
-                show={ShowGuesser}
-                recordRepresentation="title"
-                icon={BookIcon}
-            />
-            <Resource
-                name="comments"
-                list={ListGuesser}
-                edit={EditGuesser}
-                show={ShowGuesser}
-                icon={ChatBubbleIcon}
-            />
-            <Resource name="tags" recordRepresentation={tag => tag.name.en} />
-        </Admin>
+            <AdminUI ready={Loading}>
+                {resources.map(resource => {
+                    return <Resource {...resource} />;
+                })}
+            </AdminUI>
+        </AdminContext>
     );
 }
 
